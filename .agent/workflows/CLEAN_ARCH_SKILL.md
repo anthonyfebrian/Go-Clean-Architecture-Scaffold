@@ -193,7 +193,7 @@ Create `internal/domain/usecase/implementation/<action>_use_case_impl.go`:
 ### Step 10 — Controller
 Create `internal/delivery/http/controller/<name>_controller.go`:
 - Bind query/body with `c.ShouldBindQuery()` or `c.ShouldBindJSON()`.
-- On bind error: `c.Error(err); return` (global ErrorHandlerMiddleware handles it).
+- On bind error: `c.Error(err); return`.
 - Apply defaults for optional fields.
 - Build domain filter, call use case, map result to DTO, return JSON.
 - Add Swagger annotations (`// @Summary`, `// @Param`, etc.).
@@ -229,28 +229,15 @@ orderController := controller.NewOrderController(config.Log, getAllOrderUC)
 
 | Convention | Rule |
 |---|---|
-| **Error handling** | Controllers push errors via `c.Error(err)`, never write error responses directly. Global `ErrorHandlerMiddleware` from `go-core` handles it |
+| **Error handling** | Controllers push errors via `c.Error(err)`, never write error responses directly. |
 | **Context propagation** | Always pass `ctx` from Gin → UseCase → Repository → DataSource for OTel tracing |
 | **Naming** | Interfaces in domain package, implementations in `implementation/` sub-package |
 | **Constructors** | `New<Type>Impl(...)` returns the interface type, not the concrete struct |
 | **Logging** | Use structured `logrus` fields. Include `operation`, `duration`, `error` |
 | **Cache keys** | Must be deterministic and include ALL filter parameters |
-| **Pagination** | Use `go-core/pagination.Pagination[T]` generic struct everywhere |
+| **Pagination** | Defined in `internal/utils/pagination/` for generic pagination |
 | **Validation** | Use `binding` tags on DTO structs, never validate in controllers manually |
 | **Swagger** | Annotate every controller method; regenerate with `swag init -g cmd/app/main.go -o docs --parseDependency --parseInternal` |
-
----
-
-## 5. Shared Library: go-core
-
-Import path: `gitlab.com/backend-ezeelink/go-core`
-
-| Package | Provides |
-|---|---|
-| `config` | `LoadConfig[T]()`, `NewLogger()`, `NewGin()`, `InitTracer()` |
-| `middleware` | `NewErrorHandlerMiddleware()`, `NewPrometheusMiddleware()` |
-| `pagination` | `Pagination[T]{ Data, Meta }`, `Meta{ Page, Limit, Total, TotalPage }` |
-| `response` | `InternalError()`, `ErrorResponse{}` |
 
 ---
 
@@ -303,8 +290,7 @@ mockery --dir=internal/domain/repository --name=<Interface> --output=test/mocks 
 
 1. Initialize Go module: `go mod init <module-name>`
 2. Create the directory structure from Section 1
-3. Add `go-core` dependency: `go get gitlab.com/backend-ezeelink/go-core`
-4. Add framework dependencies: `go get github.com/gin-gonic/gin gorm.io/gorm gorm.io/driver/postgres github.com/redis/go-redis/v9 github.com/sirupsen/logrus`
+3. Add framework dependencies: `go get github.com/gin-gonic/gin gorm.io/gorm gorm.io/driver/postgres github.com/redis/go-redis/v9 github.com/sirupsen/logrus`
 5. Add OTel dependencies: `go get go.opentelemetry.io/otel go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin`
 6. Add Swagger: `go get github.com/swaggo/swag github.com/swaggo/gin-swagger github.com/swaggo/files`
 7. Add test dependencies: `go get github.com/stretchr/testify`
